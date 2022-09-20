@@ -29,6 +29,18 @@ def train_discrete(model, iterator, opt, args):
         #
         # YOUR CODE GOES HERE
         #
+        x = batch['image']
+        y = batch['cmd']
+
+        x = x.to(DEVICE)
+        y = y.to(DEVICE)
+
+        opt.zero_grad()
+        logits = model(x)
+        criterion = nn.CrossEntropyLoss()
+        loss = criterion(logits, y)
+        loss.backward()
+        opt.step()
         
         loss = loss.detach().cpu().numpy()
         loss_hist.append(loss)
@@ -128,8 +140,12 @@ def main(args):
         
         # Train the driving policy
         # Evaluate the driving policy on the validation set
-        # If the accuracy on the validation set is a new high then save the network weights 
-        
+        # If the accuracy on the validation set is a new high then save the network weights
+        train_discrete(driving_policy, training_iterator, opt, args)
+        curr_val_acc = test_discrete(driving_policy, validation_iterator, opt, args)
+        if curr_val_acc > best_val_accuracy:
+            best_val_accuracy = curr_val_acc
+            torch.save(driving_policy, args.weights_out_file)
         
     return driving_policy
 
