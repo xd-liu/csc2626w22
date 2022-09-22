@@ -38,7 +38,7 @@ def train_discrete(model, iterator, opt, args):
         opt.zero_grad()
         logits = model(x)
 
-        weights = 1. / args.class_dist
+        weights = torch.tensor(1. / args.class_dist).to(DEVICE)
         weights[args.class_dist == 0.] = 0.
         criterion = nn.CrossEntropyLoss(weight=torch.tensor(weights))
 
