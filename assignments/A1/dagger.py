@@ -91,7 +91,8 @@ if __name__ == "__main__":
     #####
 
     ## local expert demonstration
-    if args.local_expert == True:
+    if args.local_expert:
+        print("LOCAL")
         policy = torch.load(args.resume_path, map_location=torch.device('cpu')).to(DEVICE)
         args.run_id = args.resume_iter
         args.out_dir = f'./dataset/{iter}/'
@@ -100,6 +101,7 @@ if __name__ == "__main__":
         logger.info(f"Result at iter {args.run_id - 1}: {error_heading}, {error_dist}, {dest_min}")
 
     else:
+        print("REMOTE")
         args.weights_out_file = f'./weights/learn_{args.resume_iter}.weights'
         print('RETRAINING LEARNER ON AGGREGATED DATASET')
         print(f'ITERATION: {args.resume_iter}')
