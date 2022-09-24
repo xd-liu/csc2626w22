@@ -1,5 +1,5 @@
+# from train_policy import train_discrete, test_discrete
 import train_policy
-import racer
 import argparse
 import os
 
@@ -14,6 +14,10 @@ import os
 from utils import DEVICE, str2bool
 from full_state_car_racing_env import FullStateCarRacingEnv
 import imageio
+# from driving_policy import DiscreteDrivingPolicy
+# from torchvision import datasets, transforms
+# from torch.utils.data import Dataset, DataLoader
+# from dataset_loader import DrivingDataset
 
 
 def run(steering_network, args):
@@ -53,6 +57,12 @@ def run(steering_network, args):
 
 
 if __name__ == "__main__":
+    import logging
+    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+    DATE_FORMAT = "%m/%d/%Y %H:%M:%S %p"
+    logging.basicConfig(filename='dagger.log', level=logging.DEBUG, format=LOG_FORMAT, datefmt=DATE_FORMAT)
+    logger = logging.getLogger("dagger")
+    logger.info('Test')
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, help="learning rate", default=1e-3)
@@ -66,9 +76,12 @@ if __name__ == "__main__":
 
     ## new added arguments
     parser.add_argument("--timesteps", type=int, help="timesteps of simulation to run to get aggregated data", default=100000)
+    parser.add_argument("--resume_iter", type=int, help="the iteration of resumed model", default=0)
+    parser.add_argument("--resume_path", type=str, help="the path of resumed model", default='')
+    parser.add_argument("--local_expert", type=bool, help="run expert demonstration locally", default=False)
     args = parser.parse_args()
     args.save_expert_actions = True
-    args.out_dir = args.train_dir
+    # args.out_dir = args.train_dir
     args.expert_drives = False
 
     #####
@@ -76,57 +89,22 @@ if __name__ == "__main__":
     ## Reuse functions in racer.py and train_policy.py
     ## Save the learner weights of the i-th DAgger iteration in ./weights/learner_i.weights where 
     #####
-    args.weights_out_file = 'weights/learn_0.weights'
-    print('TRAINING LEARNER ON INITIAL DATASET')
-    policy = train_policy.main(args)
-    
-    error_heading_list = []
-    error_dist_list = []
-    dest_min_list = []
 
-    for iter in range(1, args.dagger_iterations + 1):
-        args.run_id = iter
-
+    ## local expert demonstration
+    if args.local_expert:
+        policy = torch.load(args.resume_path, map_location=torch.device('cpu')).to(DEVICE)
+        args.run_id = args.resume_iter
+        args.out_dir = f'./dataset/{iter}/'
         print('GETTING EXPERT DEMONSTRATIONS')
         error_heading, error_dist, dest_min = run(policy, args)
-        print('error_heading', error_heading)
-        error_heading_list.append(error_heading)
+        logger.info(f"Result at iter {args.run_id - 1}: {error_heading}, {error_dist}, {dest_min}")
 
-        print('error_dist', error_dist)
-        error_dist_list.append(error_dist)
-
-        print('dest_min', dest_min)
-        dest_min_list.append(dest_min)
-
+    else:
+        args.weights_out_file = f'./weights/learn_{args.resume_iter}.weights'
         print('RETRAINING LEARNER ON AGGREGATED DATASET')
-        print(f'ITERATION: {iter}')
-        args.weights_out_file = f'learn_{iter}.weights'
+        print(f'ITERATION: {args.resume_iter}')
+        logger.info(f"Retraining at iteration {args.resume_iter}")
         policy = train_policy.main(args)
-    
-    # final
-    error_heading, error_dist, dest_min = run(policy, args)
-    print('error_heading', error_heading)
-    error_heading_list.append(error_heading)
-
-    print('error_dist', error_dist)
-    error_dist_list.append(error_dist)
-
-    print('dest_min', dest_min)
-    dest_min_list.append(dest_min)
-
-    print('error_heading_list', error_heading_list)
-    print('error_dist_list', error_dist_list)
-    print('dest_min_list', dest_min_list)
-
-    error_heading_list = np.array(error_heading_list)
-    np.save('error_heading_list.npy', error_heading_list)
-
-    error_dist_list = np.array(error_dist_list)
-    np.save('error_dist_list.npy', error_dist_list)
-
-    dest_min_list = np.array(dest_min_list)
-    np.save('dest_min_list.npy', dest_min_list)
-
 
 
         
