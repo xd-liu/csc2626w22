@@ -91,7 +91,7 @@ if __name__ == "__main__":
     #####
 
     ## local expert demonstration
-    if args.local_expert:
+    if args.local_expert == True:
         policy = torch.load(args.resume_path, map_location=torch.device('cpu')).to(DEVICE)
         args.run_id = args.resume_iter
         args.out_dir = f'./dataset/{iter}/'
