@@ -95,7 +95,7 @@ if __name__ == "__main__":
         print("LOCAL")
         policy = torch.load(args.resume_path, map_location=torch.device('cpu')).to(DEVICE)
         args.run_id = args.resume_iter
-        args.out_dir = f'./dataset/{iter}/'
+        args.out_dir = f'./dataset/{args.resume_iter}/'
         print('GETTING EXPERT DEMONSTRATIONS')
         error_heading, error_dist, dest_min = run(policy, args)
         logger.info(f"Result at iter {args.run_id - 1}: {error_heading}, {error_dist}, {dest_min}")

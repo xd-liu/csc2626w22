@@ -8,7 +8,7 @@ import argparse
 import time
 import os
 
-from dataset_loader import DrivingDataset
+from dataset_loader import DrivingDataset, Balanced_Sampler
 from driving_policy import DiscreteDrivingPolicy
 from utils import DEVICE, str2bool
 
@@ -121,7 +121,12 @@ def main(args):
                                         classes=args.n_steering_classes,
                                         transform=data_transform)
     
-    training_iterator = DataLoader(training_dataset, batch_size=args.batch_size, shuffle=True, num_workers=1)
+    if args.balanced_batch:
+        balanced_sampler = Balanced_Sampler(training_dataset, training_dataset.class_dict)
+        training_iterator = DataLoader(training_dataset, batch_size=args.batch_size, sampler=balanced_sampler, num_workers=1)
+    else:
+        training_iterator = DataLoader(training_dataset, batch_size=args.batch_size, shuffle=True, num_workers=1)
+
     validation_iterator = DataLoader(validation_dataset, batch_size=args.batch_size, shuffle=True, num_workers=1)
     driving_policy = DiscreteDrivingPolicy(n_classes=args.n_steering_classes).to(DEVICE)
     
@@ -167,6 +172,9 @@ if __name__ == "__main__":
                         required=True)
     parser.add_argument("--weighted_loss", type=str2bool,
                         help="should you weight the labeled examples differently based on their frequency of occurence",
+                        default=False)
+    parser.add_argument("--balanced_batch", type=str2bool,
+                        help="should you make each mini-batch contain go-straight and turn command",
                         default=False)
     
     args = parser.parse_args()
